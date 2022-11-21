@@ -1,0 +1,10 @@
+[
+    {
+        "id": "ddpintegration.patientDashboard.secondColumnFragments.ddpwebservice",
+        "extensionPointId": "patientDashboard.secondColumnFragments",
+        "extensionParams": {
+            "provider": "ddpintegration",
+            "fragment": "ddpWebServiceResult"
+        }
+    }
+]

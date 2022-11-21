@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ 
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog/1.9"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog/1.9
+                  http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-1.9.xsd">
+ 
+   <changeSet id="20220513-1038" author="jamesfeshner">
+		<preConditions onFail="MARK_RAN">
+			<not>
+				<tableExists tableName="interconnection_execution" />
+			</not>
+		</preConditions>
+		<comment>
+			Create interconnection_execution table for interconnection with other systems
+		</comment>
+		<createTable tableName="interconnection_execution">
+			<column name="last_execution_id" type="int" autoIncrement="true">
+				<constraints primaryKey="true" nullable="false" />
+			</column>
+			<column name="description" type="text" />
+			<column name="last_execution_date" type="datetime">
+				<constraints nullable="false" />
+			</column>
+			<column name="creator" type="int">
+				<constraints nullable="false" />
+			</column>
+			<column name="date_created" type="datetime">
+				<constraints nullable="false" />
+			</column>
+			<column name="changed_by" type="int" />
+			<column name="date_changed" type="datetime" />
+			<column name="voided" type="smallint" defaultValueNumeric="0">
+				<constraints nullable="false" />
+			</column>
+			<column name="voided_by" type="int" />
+			<column name="date_voided" type="datetime" />
+			<column name="void_reason" type="varchar(255)" />
+			<column name="uuid" type="char(38)">
+				<constraints nullable="false" unique="true" />
+			</column>
+			
+		</createTable>
+	</changeSet>
+	
+	<changeSet id="20220513-1427" author="jamesfeshner">
+		<preConditions onFail="MARK_RAN">
+			<sqlCheck expectedResult="0">
+				SELECT COUNT(uuid) FROM
+				interconnection_execution WHERE uuid = 
+				'8fe711ed-8971-4d31-9d74-c63464aa7656';
+			</sqlCheck>
+		</preConditions>
+		<comment></comment>
+		<insert tableName="interconnection_execution">
+			<column name="description" value="Last execution date for DDP interconnection" />
+			<column name="last_execution_date" value="2018-01-01 09:12:11" />
+			<column name="creator" value="1" />
+			<column name="date_created" value="2022-01-01 15:13:14" />
+			<column name="uuid" value="8fe711ed-8971-4d31-9d74-c63464aa7656" />
+		</insert>
+	</changeSet>
+ 
+</databaseChangeLog>
