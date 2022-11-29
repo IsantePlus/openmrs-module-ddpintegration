@@ -17,8 +17,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Calendar;
@@ -37,10 +35,8 @@ import org.openmrs.EncounterType;
 import org.openmrs.Form;
 import org.openmrs.Location;
 import org.openmrs.LocationAttribute;
-import org.openmrs.LocationAttributeType;
 import org.openmrs.Obs;
 import org.openmrs.Patient;
-import org.openmrs.Person;
 import org.openmrs.User;
 import org.openmrs.Visit;
 import org.openmrs.VisitType;
@@ -52,6 +48,7 @@ import org.openmrs.api.UserService;
 import org.openmrs.api.VisitService;
 import org.openmrs.api.context.Context;
 import org.openmrs.api.impl.BaseOpenmrsService;
+import org.openmrs.module.ddpintegration.DdpintegrationConfig;
 import org.openmrs.module.ddpintegration.DdpintegrationConstants;
 import org.openmrs.module.ddpintegration.Item;
 import org.openmrs.module.ddpintegration.api.DdpintegrationService;
@@ -64,6 +61,8 @@ public class DdpintegrationServiceImpl extends BaseOpenmrsService implements Ddp
 	DdpintegrationDao dao;
 	
 	UserService userService;
+	
+	DdpintegrationConfig ddpintegrationConfig;
 	
 	/**
 	 * Injected in moduleApplicationContext.xml
@@ -96,13 +95,10 @@ public class DdpintegrationServiceImpl extends BaseOpenmrsService implements Ddp
 	@Override
 	public List<DdpIntegrationDrugModel> loadingDdpData() throws APIException {
 		List<DdpIntegrationDrugModel> listDrugs = new ArrayList<DdpIntegrationDrugModel>();
-		//SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd ");
-		//DateTimeFormatter fmt3 = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 		try {
 			listDrugs = listDrugsForPatient();
 			DdpIntegrationLastExecution lastExecution = dao
 			        .getDdpIntegrationLastExecutionByUuid(DdpintegrationConstants.DDP_LAST_EXECUTION_DATE_UUID);
-			//LocalDate tomorrow = LocalDate.now().plusDays(1);
 			lastExecution.setLastExecutionDate(Calendar.getInstance().getTime());
 			dao.savelastExecution(lastExecution);
 		}
@@ -121,22 +117,27 @@ public class DdpintegrationServiceImpl extends BaseOpenmrsService implements Ddp
 	@Override
 	public String findDdpToken() {
 		
-		String url = "https://ddp.mesi.ht/DDP_WebAPI/token";
+		ddpintegrationConfig = new DdpintegrationConfig();
+		//String url = "https://ddp.mesi.ht/DDP_WebAPI/token";
+		String url = ddpintegrationConfig.getDdpServerUrl() + "token";
 		StringBuffer response = new StringBuffer();
-		String result = null;
 		try {
 			URL obj = new URL(url);
 			
 			try {
 				HttpsURLConnection con = (HttpsURLConnection) obj.openConnection();
 				con.setRequestMethod("POST");
-				String userCredentials = "charess:D4-4B-9E-2C-4C-25-8E-B2-5D-F2-4B-F2-BF-27-AF-34";
+				//String userCredentials = "charess:D4-4B-9E-2C-4C-25-8E-B2-5D-F2-4B-F2-BF-27-AF-34";
+				String userCredentials = ddpintegrationConfig.getDdpServerUsername() + ":"
+				        + ddpintegrationConfig.getDdpServerPassword();
 				String auth = "Basic " + Base64.getEncoder().encodeToString(userCredentials.getBytes());
 				con.setRequestProperty("Authorization", auth);
 				con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
 				con.setRequestProperty("Accept", "application/json");
 				
-				String parameters = "grant_type=password&Username=charess&Password=D4-4B-9E-2C-4C-25-8E-B2-5D-F2-4B-F2-BF-27-AF-34";
+				//String parameters = "grant_type=password&Username=charess&Password=D4-4B-9E-2C-4C-25-8E-B2-5D-F2-4B-F2-BF-27-AF-34";
+				String parameters = "grant_type=password&Username=" + ddpintegrationConfig.getDdpServerUsername()
+				        + "&Password=" + ddpintegrationConfig.getDdpServerPassword();
 				con.setDoOutput(true);
 				DataOutputStream dataOutput = new DataOutputStream(con.getOutputStream());
 				dataOutput.writeBytes(parameters);
@@ -169,7 +170,11 @@ public class DdpintegrationServiceImpl extends BaseOpenmrsService implements Ddp
 	
 	public StringBuffer loadingDdpDataConnection() {
 		
-		String url = "https://ddp.mesi.ht/DDP_WebAPI/api/Ordonnance/Search";
+		ddpintegrationConfig = new DdpintegrationConfig();
+		//String url = "https://ddp.mesi.ht/DDP_WebAPI/api/Ordonnance/Search";
+		String url = ddpintegrationConfig.getDdpServerUrl() + "Ordonnance/Search";
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd ");
+		
 		StringBuffer response = new StringBuffer();
 		String access_token = findDdpToken();
 		try {
@@ -185,10 +190,18 @@ public class DdpintegrationServiceImpl extends BaseOpenmrsService implements Ddp
 				con.setRequestProperty("User-Agent",
 				    "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.2) Gecko/20100316 Firefox/3.6.2");
 				con.setRequestProperty("Accept", "application/json");
-				/*con.setRequestProperty("patientID", "1110010261");*/
-				con.setRequestProperty("siteCode", "11100");
-				con.setRequestProperty("StartDate", "2015-04-28");
-				con.setRequestProperty("EndDate", "2022-04-28");
+				
+				DdpIntegrationLastExecution lastExecution = dao
+				        .getDdpIntegrationLastExecutionByUuid(DdpintegrationConstants.DDP_LAST_EXECUTION_DATE_UUID);
+				
+				/*	con.setRequestProperty("siteCode", "11100");
+					con.setRequestProperty("StartDate", "2015-04-28");
+					con.setRequestProperty("EndDate", "2022-04-28");
+				*/
+				
+				con.setRequestProperty("siteCode", getSiteCode());
+				con.setRequestProperty("StartDate", sdf.format(lastExecution.getLastExecutionDate()));
+				con.setRequestProperty("EndDate", sdf.format(Calendar.getInstance().getTime()));
 				
 				BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(con.getInputStream()));
 				
@@ -228,7 +241,8 @@ public class DdpintegrationServiceImpl extends BaseOpenmrsService implements Ddp
 				drugList.setSiteCode(Integer.parseInt(object.getString("siteCode")));
 				drugList.setVisitDate((Date) sdf.parse(object.getString("visitDate")));
 				drugList.setCreatedDate((Date) sdf.parse(object.getString("createDate")));
-				drugList.setDrugId(drugObject.getInt("drugID"));
+				//drugList.setDrugId(drugObject.getInt("drugID"));
+				drugList.setDrugId(drugObject.getInt("ID_iSantePlus"));
 				drugList.setDrugName(drugObject.getString("drugName"));
 				//drugList.setDispenseDate((Date) sdf.parse(object.getString("dispenseDate")));
 				//drugList.setNumberDay(Integer.parseInt(object.getString("numofdays")));
@@ -240,34 +254,24 @@ public class DdpintegrationServiceImpl extends BaseOpenmrsService implements Ddp
 		return drugModel;
 	}
 	
-	private Patient findPatientByIsanteId(String isanteId) {
+	private String getSiteCode() {
 		
-		return Context.getService(Patient.class).getPatientIdentifier(isanteId).getPatient();
-	}
-	
-	private Location findPatientLocation(Patient patient) {
-		Location location = patient.getPatientIdentifier().getLocation();
-		
-		return location;
-		/*
-		 * 
-		 * 
 		String siteCode = "";
 		String uuid = "0e52924e-4ebb-40ba-9b83-b198b532653b";
-
-		for (LocationAttribute locationAttribute : encounter.getLocation().getAttributes()) {
-
-		if (locationAttribute.getAttributeType().getUuid().equals(uuid)) {
-		siteCode = locationAttribute.getValueReference();
-		}
-		}
-		 * 
-		 * 
-		 * 
-		 * 
-		 * 
-		 * */
 		
+		for (LocationAttribute locationAttribute : getFirstEncounter().getLocation().getAttributes()) {
+			
+			if (locationAttribute.getAttributeType().getUuid().equals(uuid)) {
+				siteCode = locationAttribute.getValueReference();
+			}
+		}
+		
+		return siteCode;
+	}
+	
+	public Encounter getFirstEncounter() {
+		Encounter firstEncounter = Context.getEncounterService().getEncounter(0);
+		return firstEncounter != null ? firstEncounter : null;
 	}
 	
 	public Visit createDdpVisit(Patient patient, Location location, User creator, Date startDate) {
