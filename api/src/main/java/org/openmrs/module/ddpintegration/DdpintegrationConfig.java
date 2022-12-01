@@ -29,15 +29,15 @@ public class DdpintegrationConfig {
 	private final static String DDP_SEVER_PASSWORD = "ddpintegration.server.password";
 	
 	public String getDdpServerUrl() {
-		return getProperty(DDP_SEVER_URL, "");
+		return getProperty(DDP_SEVER_URL, "https://ddp.mesi.ht/DDP_WebAPI_Test/");
 	}
 	
 	public String getDdpServerUsername() {
-		return getProperty(DDP_SEVER_USERNAME, "");
+		return getProperty(DDP_SEVER_USERNAME, "charess");
 	}
 	
 	public String getDdpServerPassword() {
-		return getProperty(DDP_SEVER_PASSWORD, "");
+		return getProperty(DDP_SEVER_PASSWORD, "D4-4B-9E-2C-4C-25-8E-B2-5D-F2-4B-F2-BF-27-AF-34");
 	}
 	
 	private String getProperty(String name, String defaultVal) {

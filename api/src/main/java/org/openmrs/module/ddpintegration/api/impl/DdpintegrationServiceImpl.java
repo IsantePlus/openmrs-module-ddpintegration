@@ -64,6 +64,8 @@ public class DdpintegrationServiceImpl extends BaseOpenmrsService implements Ddp
 	
 	DdpintegrationConfig ddpintegrationConfig;
 	
+	SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd ");
+	
 	/**
 	 * Injected in moduleApplicationContext.xml
 	 */
@@ -117,8 +119,6 @@ public class DdpintegrationServiceImpl extends BaseOpenmrsService implements Ddp
 	@Override
 	public String findDdpToken() {
 		
-		ddpintegrationConfig = new DdpintegrationConfig();
-		//String url = "https://ddp.mesi.ht/DDP_WebAPI/token";
 		String url = ddpintegrationConfig.getDdpServerUrl() + "token";
 		StringBuffer response = new StringBuffer();
 		try {
@@ -136,11 +136,15 @@ public class DdpintegrationServiceImpl extends BaseOpenmrsService implements Ddp
 				con.setRequestProperty("Accept", "application/json");
 				
 				//String parameters = "grant_type=password&Username=charess&Password=D4-4B-9E-2C-4C-25-8E-B2-5D-F2-4B-F2-BF-27-AF-34";
-				String parameters = "grant_type=password&Username=" + ddpintegrationConfig.getDdpServerUsername()
-				        + "&Password=" + ddpintegrationConfig.getDdpServerPassword();
+				
+				StringBuilder parameters = new StringBuilder();
+				parameters.append("grant_type=").append("password").append("&Username=")
+				        .append(ddpintegrationConfig.getDdpServerUsername()).append("&Password=")
+				        .append(ddpintegrationConfig.getDdpServerPassword());
+				
 				con.setDoOutput(true);
 				DataOutputStream dataOutput = new DataOutputStream(con.getOutputStream());
-				dataOutput.writeBytes(parameters);
+				dataOutput.writeBytes(parameters.toString());
 				dataOutput.close();
 				dataOutput.flush();
 				
@@ -170,16 +174,29 @@ public class DdpintegrationServiceImpl extends BaseOpenmrsService implements Ddp
 	
 	public StringBuffer loadingDdpDataConnection() {
 		
+		/*	String siteCode = "11100";
+			String startDate = "2022-10-01";
+			String endDate = "2022-11-29";*/
+		
+		DdpIntegrationLastExecution lastExecution = dao
+		        .getDdpIntegrationLastExecutionByUuid(DdpintegrationConstants.DDP_LAST_EXECUTION_DATE_UUID);
+		
+		String siteCode = getSiteCode();
+		String startDate = sdf.format(lastExecution.getLastExecutionDate());
+		String endDate = sdf.format(Calendar.getInstance().getTime());
+		
 		ddpintegrationConfig = new DdpintegrationConfig();
-		//String url = "https://ddp.mesi.ht/DDP_WebAPI/api/Ordonnance/Search";
-		String url = ddpintegrationConfig.getDdpServerUrl() + "Ordonnance/Search";
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd ");
+		String url = ddpintegrationConfig.getDdpServerUrl() + "api/Ordonnance/Search";
+		
+		StringBuilder sbUrl = new StringBuilder(url);
+		sbUrl.append("?siteCode=").append(siteCode).append("&StartDate=").append(startDate).append("&EndDate=")
+		        .append(endDate);
 		
 		StringBuffer response = new StringBuffer();
 		String access_token = findDdpToken();
 		try {
 			
-			URL obj = new URL(url);
+			URL obj = new URL(sbUrl.toString());
 			
 			try {
 				HttpsURLConnection con = (HttpsURLConnection) obj.openConnection();
@@ -190,18 +207,6 @@ public class DdpintegrationServiceImpl extends BaseOpenmrsService implements Ddp
 				con.setRequestProperty("User-Agent",
 				    "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.2) Gecko/20100316 Firefox/3.6.2");
 				con.setRequestProperty("Accept", "application/json");
-				
-				DdpIntegrationLastExecution lastExecution = dao
-				        .getDdpIntegrationLastExecutionByUuid(DdpintegrationConstants.DDP_LAST_EXECUTION_DATE_UUID);
-				
-				/*	con.setRequestProperty("siteCode", "11100");
-					con.setRequestProperty("StartDate", "2015-04-28");
-					con.setRequestProperty("EndDate", "2022-04-28");
-				*/
-				
-				con.setRequestProperty("siteCode", getSiteCode());
-				con.setRequestProperty("StartDate", sdf.format(lastExecution.getLastExecutionDate()));
-				con.setRequestProperty("EndDate", sdf.format(Calendar.getInstance().getTime()));
 				
 				BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(con.getInputStream()));
 				
@@ -244,9 +249,10 @@ public class DdpintegrationServiceImpl extends BaseOpenmrsService implements Ddp
 				//drugList.setDrugId(drugObject.getInt("drugID"));
 				drugList.setDrugId(drugObject.getInt("ID_iSantePlus"));
 				drugList.setDrugName(drugObject.getString("drugName"));
-				//drugList.setDispenseDate((Date) sdf.parse(object.getString("dispenseDate")));
-				//drugList.setNumberDay(Integer.parseInt(object.getString("numofdays")));
-				
+				/*//A verifier avec l'equipe de Solution
+				drugList.setDispenseDate((Date) sdf.parse(object.getString("dispenseDate")));
+				drugList.setNumberDay(Integer.parseInt(object.getString("numofdays")));
+				*/
 				drugModel.add(drugList);
 			}
 		}

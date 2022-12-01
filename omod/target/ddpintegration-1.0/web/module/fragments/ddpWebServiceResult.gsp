@@ -4,6 +4,7 @@
     </div>
     
     <div class="info-body">
+    	
     	<% if (items != null) { %>
     		
 			    	<% items.each { %>
@@ -14,7 +15,8 @@
 	    					Date de creation : ${ui.format(it.getCreatedDate())}<br/>
 	    					Drug ID : ${ui.format(it.getDrugId())}<br/>
 	    					Nom drug : ${ui.format(it.getDrugName())}<br/>
-	    					Date dispense : ${ui.format(it.getDispenseDate())}
+	    					Date dispense : ${ui.format(it.getDispenseDate())} <br/>
+	    					Nb de jour dispense : ${ui.format(it.getNumberDay())} <br/>
 	    					<br/>
 	    					<br/>
 				    	
